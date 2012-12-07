@@ -30,8 +30,11 @@ import hudson.model.Action;
 import hudson.model.Descriptor;
 import hudson.model.Job;
 import hudson.model.Run;
+import hudson.scm.AbstractScmTagAction;
 import hudson.scm.ChangeLogSet;
 import hudson.scm.SCMRevisionState;
+import hudson.scm.SubversionSCM;
+import hudson.scm.SubversionTagAction;
 import hudson.views.ListViewColumn;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -39,6 +42,8 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -51,6 +56,9 @@ public class LastSuccessSCMRevisionColumn extends ListViewColumn {
     
     public String getRevision(Job job)
     {
+        boolean haveResult = false;
+        long result = 0;
+
         LOGGER.info("jobName:" + job.getName() );
         final Run run = job.getLastSuccessfulBuild();
 
@@ -61,28 +69,31 @@ public class LastSuccessSCMRevisionColumn extends ListViewColumn {
             LOGGER.info( "runActions:" + run.getActions().toString() );
             LOGGER.info( "build no: " + run.getNumber() );
 
-//            if ( run instanceof AbstractBuild<?,?> )
-//            {
-//                final AbstractBuild<?,?> build = (AbstractBuild<?,?>)run;
-//                final ChangeLogSet<? extends ChangeLogSet.Entry> changeSet = build.getChangeSet();
-//                if ( null != changeSet )
-//                {
-//                    LOGGER.info( " changeSet:" + build.getChangeSet().toString() );
-//                    for ( ChangeLogSet.Entry entry : changeSet )
-//                    {
-//                        LOGGER.info( "  entry: " + entry );
-//                        LOGGER.info( "   commitId: " + entry.getCommitId() );
-//                    }
-//                }
-//            }
+            LOGGER.info( "runActions:" + run.getActions().toString() );
+            List<Action> actions = run.getActions();
+            for ( final Action action : actions )
+            {
+                if ( action instanceof AbstractScmTagAction )
+                {
+                    AbstractScmTagAction scmTagAction = (AbstractScmTagAction)action;
+                    LOGGER.info( "  scmTagAction: " + scmTagAction.getUrlName() );
+                    SubversionTagAction svnTagAction = (SubversionTagAction)scmTagAction;
+                    Map<SubversionSCM.SvnInfo,List<String>> tags = svnTagAction.getTags();
+                    Set<SubversionSCM.SvnInfo> keys = tags.keySet();
+                    for ( final SubversionSCM.SvnInfo svnInfo : keys )
+                    {
+                        haveResult = true;
+                        LOGGER.info( "   rev=" + svnInfo.revision );
+                        if ( result < svnInfo.revision )
+                        {
+                            result = svnInfo.revision;
+                        }
+                    }
+                }
 
-//          // SVNRevisionState doesn't have public-method...
-//            LOGGER.info( "runActions:" + run.getActions().toString() );
-//            List<Action> actions = run.getActions();
-//            for ( final Action action : actions )
-//            {
 //                if ( action instanceof SCMRevisionState )
 //                {
+//                    // SVNRevisionState doesn't have public-method...
 //                    SCMRevisionState scmRevState = (SCMRevisionState)action;
 //                    LOGGER.info( " scmRevState#DisplayName:" + scmRevState.getDisplayName() );
 //
@@ -93,7 +104,12 @@ public class LastSuccessSCMRevisionColumn extends ListViewColumn {
 //                        LOGGER.info( " SVN" );
 //                    }
 //                }
-//            }
+            }
+        }
+
+        if ( haveResult )
+        {
+            return Long.toString(result);
         }
 
         return null;

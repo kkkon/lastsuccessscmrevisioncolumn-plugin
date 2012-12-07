@@ -30,6 +30,7 @@ import hudson.model.Action;
 import hudson.model.Descriptor;
 import hudson.model.Job;
 import hudson.model.Run;
+import hudson.scm.ChangeLogSet;
 import hudson.scm.SCMRevisionState;
 import hudson.views.ListViewColumn;
 import net.sf.json.JSONObject;
@@ -50,6 +51,7 @@ public class LastSuccessSCMRevisionColumn extends ListViewColumn {
     
     public String getRevision(Job job)
     {
+        LOGGER.info("jobName:" + job.getName() );
         final Run run = job.getLastSuccessfulBuild();
 
         LOGGER.info( "jobProperties:" + job.getProperties().toString() );
@@ -57,29 +59,41 @@ public class LastSuccessSCMRevisionColumn extends ListViewColumn {
         if ( null != run )
         {
             LOGGER.info( "runActions:" + run.getActions().toString() );
+            LOGGER.info( "build no: " + run.getNumber() );
 
-            if ( run instanceof AbstractBuild<?,?> )
-            {
-                AbstractBuild<?,?> build = (AbstractBuild<?,?>)run;
-                LOGGER.info( " changeSet:" + build.getChangeSet().toString() );
-            }
+//            if ( run instanceof AbstractBuild<?,?> )
+//            {
+//                final AbstractBuild<?,?> build = (AbstractBuild<?,?>)run;
+//                final ChangeLogSet<? extends ChangeLogSet.Entry> changeSet = build.getChangeSet();
+//                if ( null != changeSet )
+//                {
+//                    LOGGER.info( " changeSet:" + build.getChangeSet().toString() );
+//                    for ( ChangeLogSet.Entry entry : changeSet )
+//                    {
+//                        LOGGER.info( "  entry: " + entry );
+//                        LOGGER.info( "   commitId: " + entry.getCommitId() );
+//                    }
+//                }
+//            }
 
-            List<Action> actions = run.getActions();
-            for ( final Action action : actions )
-            {
-                if ( action instanceof SCMRevisionState )
-                {
-                    SCMRevisionState scmRevState = (SCMRevisionState)action;
-                    LOGGER.info( " scmRevState#DisplayName:" + scmRevState.getDisplayName() );
-
-                    final String className = action.getClass().getName();
-                    LOGGER.info( " className:" + className );
-                    if ( 0 == "hudson.scm.SVNRevisionState".compareTo(className) )
-                    {
-                        LOGGER.info( " SVN" );
-                    }
-                }
-            }
+//          // SVNRevisionState doesn't have public-method...
+//            LOGGER.info( "runActions:" + run.getActions().toString() );
+//            List<Action> actions = run.getActions();
+//            for ( final Action action : actions )
+//            {
+//                if ( action instanceof SCMRevisionState )
+//                {
+//                    SCMRevisionState scmRevState = (SCMRevisionState)action;
+//                    LOGGER.info( " scmRevState#DisplayName:" + scmRevState.getDisplayName() );
+//
+//                    final String className = action.getClass().getName();
+//                    LOGGER.info( " className:" + className );
+//                    if ( 0 == "hudson.scm.SVNRevisionState".compareTo(className) )
+//                    {
+//                        LOGGER.info( " SVN" );
+//                    }
+//                }
+//            }
         }
 
         return null;

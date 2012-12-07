@@ -1,0 +1,4 @@
+<j:jelly xmlns:j="jelly:core">
+  <j:set var="scmRevision" value="${it.getRevision(job)}"/>
+  <td data="${scmRevision}">${scmRevision}</td>
+</j:jelly>

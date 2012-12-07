@@ -36,6 +36,12 @@
       <version>1.26</version> <!-- at parent 1.466 -->
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>bazaar</artifactId>
+      <version>1.21</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->

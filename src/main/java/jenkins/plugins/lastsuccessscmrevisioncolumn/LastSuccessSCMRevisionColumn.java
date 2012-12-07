@@ -23,41 +23,88 @@
  */
 package jenkins.plugins.lastsuccessscmrevisioncolumn;
 
-import hudson.Launcher;
 import hudson.Extension;
-import hudson.model.AbstractBuild;
 import hudson.model.Action;
 import hudson.model.Descriptor;
 import hudson.model.Job;
 import hudson.model.Run;
 import hudson.scm.AbstractScmTagAction;
-import hudson.scm.ChangeLogSet;
-import hudson.scm.SCMRevisionState;
-import hudson.scm.SubversionSCM;
-import hudson.scm.SubversionTagAction;
 import hudson.views.ListViewColumn;
-import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.QueryParameter;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
+import jenkins.plugins.lastsuccessscmrevisioncolumn.scm.UtilBazaar;
+import jenkins.plugins.lastsuccessscmrevisioncolumn.scm.UtilSubversion;
 
 /**
  */
 public class LastSuccessSCMRevisionColumn extends ListViewColumn {
 
+    public boolean isSubversion( final AbstractScmTagAction scmTagAction )
+    {
+        if ( null == scmTagAction )
+        {
+            return false;
+        }
+
+        Class<?> clazz = null;
+        try
+        {
+            clazz = Class.forName("hudson.scm.SubversionTagAction");
+        }
+        catch (ClassNotFoundException e)
+        {
+            
+        }
+
+        if ( null != clazz )
+        {
+            if ( clazz.isInstance(scmTagAction) )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean isBazaar( final AbstractScmTagAction scmTagAction )
+    {
+        if ( null == scmTagAction )
+        {
+            return false;
+        }
+
+        Class<?> clazz = null;
+        try
+        {
+            clazz = Class.forName("hudson.plugins.bazaar.BazaarTagAction");
+        }
+        catch (ClassNotFoundException e)
+        {
+            
+        }
+
+        if ( null != clazz )
+        {
+            if ( clazz.isInstance(scmTagAction) )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @DataBoundConstructor
     public LastSuccessSCMRevisionColumn() {
     }
-    
+
     public String getRevision(Job job)
     {
         boolean haveResult = false;
-        long result = 0;
+        String result = "";
 
         LOGGER.info("jobName:" + job.getName() );
         final Run run = job.getLastSuccessfulBuild();
@@ -77,16 +124,27 @@ public class LastSuccessSCMRevisionColumn extends ListViewColumn {
                 {
                     AbstractScmTagAction scmTagAction = (AbstractScmTagAction)action;
                     LOGGER.info( "  scmTagAction: " + scmTagAction.getUrlName() );
-                    SubversionTagAction svnTagAction = (SubversionTagAction)scmTagAction;
-                    Map<SubversionSCM.SvnInfo,List<String>> tags = svnTagAction.getTags();
-                    Set<SubversionSCM.SvnInfo> keys = tags.keySet();
-                    for ( final SubversionSCM.SvnInfo svnInfo : keys )
+                    if ( isSubversion(scmTagAction) )
                     {
-                        haveResult = true;
-                        LOGGER.info( "   rev=" + svnInfo.revision );
-                        if ( result < svnInfo.revision )
+                        final long rev = UtilSubversion.getRevision( scmTagAction );
                         {
-                            result = svnInfo.revision;
+                            LOGGER.info( "   rev=" + rev );
+                            final String revStr = String.valueOf( rev );
+                            if ( result.compareTo(revStr) < 0 )
+                            {
+                                haveResult = true;
+                                result = revStr;
+                            }
+                        }
+                    }
+                    else
+                    if ( isBazaar(scmTagAction) )
+                    {
+                        final String rev = UtilBazaar.getRevision( scmTagAction );
+                        if ( result.compareTo(rev) < 0 )
+                        {
+                            haveResult = true;
+                            result = rev;
                         }
                     }
                 }
@@ -109,7 +167,7 @@ public class LastSuccessSCMRevisionColumn extends ListViewColumn {
 
         if ( haveResult )
         {
-            return Long.toString(result);
+            return result;
         }
 
         return null;

@@ -1,7 +1,7 @@
 /**
  * The MIT License
  * 
- * Copyright (C) 2012 KK.Kon
+ * Copyright (C) 2012-2013 Kiyofumi Kondoh
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,17 +25,25 @@ package jenkins.plugins.lastsuccessscmrevisioncolumn;
 
 import hudson.Extension;
 import hudson.model.Action;
+import hudson.model.Api;
 import hudson.model.Descriptor;
+import hudson.model.Hudson;
 import hudson.model.Job;
+import hudson.model.Project;
 import hudson.model.Run;
 import hudson.scm.AbstractScmTagAction;
 import hudson.views.ListViewColumn;
+import java.util.HashMap;
+import java.util.Iterator;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import jenkins.plugins.lastsuccessscmrevisioncolumn.scm.UtilBazaar;
 import jenkins.plugins.lastsuccessscmrevisioncolumn.scm.UtilSubversion;
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
 
 /**
  */
@@ -173,6 +181,43 @@ public class LastSuccessSCMRevisionColumn extends ListViewColumn {
         return null;
     }
 
+    @Exported
+    public Map<String,String> scmVersionByJob = new HashMap<String, String>();
+
+    public Api getApi() {
+        {
+            final List<Project> lstPrj = Hudson.getInstance().getProjects();
+            if ( null != lstPrj )
+            {
+                final Iterator<Project> itPrj = lstPrj.iterator();
+                if ( null != itPrj )
+                {
+                    for ( ; itPrj.hasNext(); )
+                    {
+                        final Project prj = itPrj.next();
+                        if ( null == prj )
+                        {
+                            continue;
+                        }
+
+                        final String prjName = prj.getName();
+
+                        if ( prj instanceof Job )
+                        {
+                            final Job job = (Job)prj;
+                            final String rev = getRevision( job );
+                            if ( null != rev )
+                            {
+                                scmVersionByJob.put( prjName, rev );
+                            }
+                        }
+                    }
+                }
+            }   
+        }
+        return new Api(this);
+    }
+    
     // Overridden for better type safety.
     // If your plugin doesn't really define any property on Descriptor,
     // you don't have to do this.
